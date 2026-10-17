@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TOUCHLINE IQ</title>
+<style>
+:root{--paper:#e8edee;--ink:#13222b;--turf:#1f4d3b;--chalk:#f4f6ef;--flag:#c8372d;--home:#f0c64a;--away:#7fb7e6;--mute:#5b6b73;--line:#c5d0d3}
+@media(prefers-color-scheme:dark){:root{--paper:#14201f;--ink:#e6eeea;--mute:#9db0aa;--line:#2c4240}}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Avenir Next",Optima,"Segoe UI",sans-serif}
+header{padding:20px clamp(16px,4vw,48px) 8px}h1{font:700 clamp(28px,5vw,48px)/1 Georgia,"Iowan Old Style",serif;margin:0;letter-spacing:-.02em}
+header p{margin:6px 0 0;color:var(--mute);max-width:60ch}
+main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;padding:12px clamp(16px,4vw,48px) 40px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.pitch{background:var(--turf);border-radius:4px;width:100%;display:block}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0}
+input[type=range]{flex:1;min-width:140px}select,button{font:inherit;padding:8px 12px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px}
+button.go{background:var(--flag);border-color:var(--flag);color:#fff;font-weight:600}button:focus-visible,select:focus-visible,input:focus-visible,li:focus-visible{outline:3px solid var(--home);outline-offset:2px}
+h2{font:700 20px Georgia,serif;margin:18px 0 6px}ul{list-style:none;padding:0;margin:0}
+#moments li{padding:8px 10px;border-left:4px solid var(--line);cursor:pointer}#moments li[aria-selected=true]{border-color:var(--flag);background:rgba(200,55,45,.1)}
+#evidence li{padding:4px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px}code{font-size:12px;word-break:break-all}
+.story p{margin:.4em 0}.note{color:var(--mute);font-size:13px}.ok{color:#2a8a4a;font-weight:600}.bad{color:var(--flag);font-weight:600}
+</style></head><body>
+<header><h1>TOUCHLINE IQ</h1><p>Pick a moment, ask why it happened, and read a recap where every sentence points to the events behind it. Data is synthetic.</p></header>
+<main><section>
+<svg id="pitch" class="pitch" viewBox="0 0 105 68" role="img" aria-label="Pitch showing recent events"></svg>
+<div class="row"><label for="t">Match clock</label><input id="t" type="range" min="0" max="5400" step="5" value="4010"><output id="clock">67:00</output></div>
+<svg id="tci" viewBox="0 0 600 90" style="width:100%" role="img" aria-label="Home control index over time"></svg>
+<p class="note">Control index (home team, trailing 10 minutes): heuristic with unvalidated starting weights.</p>
+</section><section>
+<h2>Moments</h2><ul id="moments"></ul>
+<div class="row"><select id="aud" aria-label="Audience"><option value="fan">Fan</option><option value="studio">Studio</option><option value="analyst">Analyst</option></select>
+<select id="lang" aria-label="Language"><option value="en">English</option><option value="sw">Kiswahili</option><option value="fr">Français</option><option value="es">Español</option></select>
+<button class="go" id="explain">Explain this moment</button></div>
+<div id="out" class="story"><p class="note">Select a moment, then choose Explain this moment.</p></div>
+</section></main>
+<script>
+let D,SEL=null,HL=[];const $=id=>document.getElementById(id),NS="http://www.w3.org/2000/svg";
+const mm=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e}
+function drawPitch(){const p=$("pitch");p.innerHTML="";const c={stroke:"#f4f6ef","stroke-width":.3,fill:"none",opacity:.8};
+el("rect",{x:.5,y:.5,width:104,height:67,...c},p);el("line",{x1:52.5,y1:.5,x2:52.5,y2:67.5,...c},p);el("circle",{cx:52.5,cy:34,r:9.15,...c},p);
+el("rect",{x:.5,y:13.8,width:16.5,height:40.3,...c},p);el("rect",{x:88,y:13.8,width:16.5,height:40.3,...c},p);
+const t=+$("t").value;$("clock").textContent=mm(t);const evs=D.events.filter(e=>e.t<=t&&e.t>t-40);
+const ids=new Set(HL);const chain=D.events.filter(e=>ids.has(e.id)&&e.t<=t);
+for(let i=1;i<chain.length;i++)el("line",{x1:chain[i-1].x,y1:chain[i-1].y,x2:chain[i].x,y2:chain[i].y,stroke:"#c8372d","stroke-width":.9,"stroke-linecap":"round"},p);
+evs.forEach(e=>{const h=ids.has(e.id);el("circle",{cx:e.x,cy:e.y,r:h?1.8:1.1,fill:e.team=="home"?"#f0c64a":"#7fb7e6",stroke:h?"#c8372d":"none","stroke-width":.7,opacity:h?1:.7},p).appendChild(Object.assign(document.createElementNS(NS,"title"),{textContent:`${e.id} ${mm(e.t)} ${e.player} ${e.type}`}))})}
+function drawTci(){const p=$("tci");p.innerHTML="";const s=D.tci;if(!s.length)return;const x=t=>t/5400*590+5,y=v=>85-v*.8;
+el("line",{x1:5,x2:595,y1:y(50),y2:y(50),stroke:"currentColor",opacity:.3,"stroke-dasharray":"3 3"},p);
+el("polyline",{points:s.map(d=>x(d.t)+","+y(d.tci)).join(" "),fill:"none",stroke:"#c8372d","stroke-width":2},p)}
+function drawMoments(){const u=$("moments");u.innerHTML="";D.moments.slice().sort((a,b)=>b.xg-a.xg).slice(0,8).forEach(m=>{const li=document.createElement("li");li.tabIndex=0;li.setAttribute("aria-selected",m.id==SEL);
+li.textContent=`${m.minute}' ${m.attacking_team} chance after a turnover, xG ${m.xg}`;const pick=()=>{SEL=m.id;HL=m.event_ids;$("t").value=Math.ceil(m.start_t+m.seconds_to_shot+2);drawMoments();drawPitch()};
+li.onclick=pick;li.onkeydown=e=>{if(e.key=="Enter"||e.key==" "){e.preventDefault();pick()}};u.appendChild(li)})}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+async function explain(){if(!SEL){$("out").innerHTML='<p class="bad">Pick a moment first.</p>';return}
+const r=await fetch("/api/explain",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({moment_id:SEL,audience:$("aud").value,language:$("lang").value})});
+if(!r.ok){$("out").innerHTML='<p class="bad">Could not explain this moment: '+esc(await r.text())+'</p>';return}
+const j=await r.json();if(!j.view){$("out").innerHTML='<p class="bad">Evidence check failed: '+esc(j.verification.issues.join("; "))+'</p>';return}
+const sents=j.narrative.sentences;
+$("out").innerHTML=`<h2>${esc(j.view.headline)}</h2>`+j.view.body.map(b=>`<p>${esc(b)}</p>`).join("")+
+`<p class="note">Text source: ${esc(j.narrative.source)}. Evidence check: <span class="ok">${j.verification.verified?"verified":"failed"}</span>. Report ${esc(j.report_id)}, hash <code>${esc(j.manifest_hash.slice(0,16))}</code> (local hash chain)</p>
+<h2>Evidence</h2><ul id="evidence">${j.moment.evidence.map(e=>`<li tabindex="0" data-ids="${e.event_ids.join(",")}">${esc(e.claim)}: ${e.event_ids.join(", ")}</li>`).join("")}</ul>
+<div class="row"><button id="ver">Verify report integrity</button><span id="vr" class="note"></span></div>
+<p class="note">Agents: ${j.trace.map(t=>t.agent+" "+t.ms+"ms").join(", ")}</p>`;
+document.querySelectorAll("#evidence li").forEach(li=>li.onclick=()=>{HL=li.dataset.ids.split(",");drawPitch()});
+$("ver").onclick=async()=>{const v=await (await fetch("/api/verify/"+j.report_id)).json();$("vr").textContent=v.manifest_unchanged&&v.ledger_entry_intact?"Unchanged since it was anchored.":"Mismatch detected."}}
+$("t").oninput=drawPitch;$("explain").onclick=explain;
+fetch("/api/match").then(r=>r.json()).then(d=>{D=d;drawTci();drawMoments();const m=d.moments.find(x=>x.minute==67);if(m){SEL=m.id;HL=m.event_ids;$("t").value=Math.ceil(m.start_t+m.seconds_to_shot+2);drawMoments()}drawPitch()});
+</script></body></html>

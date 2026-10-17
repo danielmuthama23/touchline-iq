@@ -1,0 +1,7 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+httpx>=0.27
+# openai>=1.40            # Foundry / OpenAI-compatible endpoint
+# opencv-python-headless  # video layer
+# ultralytics             # YOLO
