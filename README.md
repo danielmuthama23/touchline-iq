@@ -1,4 +1,8 @@
 # TOUCHLINE IQ
+
+![Touchline IQ — Every Moment Has a Story](./as.png)
+
+
 Touchline IQ is an explainable football intelligence platform designed for the Microsoft + Premier League *Inside the Game* hackathon. The system models a match as a traceable, player-aware event graph, where every player is treated as a distinct identity, each possession phase is connected to tactical context, and every narrative is anchored to matching evidence before it is surfaced.
 
 The platform is built to feel like a real analyst workstation: it identifies critical moments, explains tactical patterns, exposes supporting evidence, and verifies the output before it is shared with stakeholders.
